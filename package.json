@@ -1,0 +1,31 @@
+{
+  "name": "DoNotes Lite",
+  "version": "1.0.0",
+  "description": "Easily create offline notes",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "keywords": [
+    "electron"
+  ],
+  "author": "Suleman Hussain",
+  "license": "ISC",
+  "dependencies": {
+    "electron": "^8.2.5",
+    "electron-builder": "^24.6.4",
+    "electron-tabs": "^1.0.1",
+    "express": "^4.18.2",
+    "jquery": "^3.7.1"
+  },
+  "fileAssociations": [
+    {
+      "ext": "dn",
+      "name": "DoNotes note",
+      "description": "A file containing XML-style information that can be accessed by DoNotes"
+    }
+  ],
+  "devDependencies": {
+    "electron-packager": "^17.1.2"
+  }
+}

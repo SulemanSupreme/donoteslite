@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>New note* - DoNotes Lite</title>
+    <script>window.$ = window.jQuery = require('jquery');</script>
+    <script src="./tinymce/js/tinymce/tinymce.min.js"></script>
+    <script type="text/javascript" src="./fabric.min.js"></script>
+    <script type="text/javascript">
+
+const electron = require('electron');
+const { ipcRenderer } = require('electron');
+const remote = require('electron').remote;
+const app = remote.app;
+const path = require('path');
+const fs = require('fs');
+var fileNotePathDn;
+var opened = false;
+function markFileAsUnsaved() {
+  ipcRenderer.send('file-unsaved');
+}
+function markFileAsSaved() {
+  ipcRenderer.send('file-saved');
+}
+function saveFileQuietly(data, filename) {
+  const filePath = path.join(app.getPath('userData'), filename);
+
+  fs.writeFile(filePath, data, (err) => {
+    if (err) {
+      console.error('Error saving file:', err);
+    } else {
+      console.log('File saved successfully:', filePath);
+    }
+  });
+}
+const fileNotePath = path.join(app.getPath('userData'), './opened.txt');
+    // Data to write to the file
+
+if (fs.existsSync(fileNotePath)) {
+    // Read the file content
+    const fileNoteContent = fs.readFileSync(fileNotePath, 'utf-8');
+    console.log('File content:', fileNoteContent);
+    fileNotePathDn = fileNoteContent;
+    var noteId = fileNoteContent;
+    var noteName = noteId.lastIndexOf("\\");
+
+    if (noteName !== -1) {
+      noteName = noteId.substring(noteName + 1);
+    } else {
+        noteName = noteId
+    }
+    fs.unlink(fileNotePath, (err) => {
+        if (err) {
+            alert("An error ocurred updating the file" + err.message);
+            console.log(err);
+            return;
+        }
+        console.log("File succesfully deleted");
+    });
+// Data to write to the file
+
+if (fs.existsSync(fileNotePathDn) && fileNoteContent != '') {
+            // Read the file content
+            const fileNoteContentDn = fs.readFileSync(fileNotePathDn, 'utf-8');
+            console.log('File content:', fileNoteContentDn);
+            var inputString = fileNoteContentDn;
+            // Define regular expressions to extract values
+            var versionRegex = /<donotes-version>(.*?)<\/donotes-version>/;
+            var textRegex = /<donotes-text>([\s\S]*?)<\/donotes-text>/;
+            var imgRegex = /<donotes-img>(.*?)<\/donotes-img>/;
+
+            // Extract values using regular expressions
+            var versionMatch = inputString.match(versionRegex);
+            var textMatch = inputString.match(textRegex);
+            var imgMatch = inputString.match(imgRegex);
+
+            // Check if matches exist and get the values
+            var version = versionMatch ? versionMatch[1] : "";
+            var text = textMatch ? textMatch[1] : "";
+            var img = imgMatch ? imgMatch[1] : "";
+
+            console.log("donotes-version:", version);
+            console.log("donotes-text:", text);
+            console.log("donotes-img:", img);
+        document.title = noteName + ' - DoNotes Lite';
+            opened = true;
+
+            if(fileNotePathDn == 'undefined') {
+                opened = false;
+            }
+    } else {
+            console.log('File does not exist. noteData');
+
+    }
+} else {
+    console.log('File does not exist. ' + fileNotePath);
+   // window.location.href = "index.html";
+   document.title = 'New note* - DoNotes Lite';
+}
+if(opened == false) {
+    var version = 'LTE 1.0 (3.2)';
+    var text = '<h1>A new note awaits</h1>';
+    var img = '';
+}
+   
+
+let height = screen.height;
+var lockModal = false;
+var penState = 0; 
+    tinymce.init({
+        selector: '#nexustext',
+        promotion: false,
+        menubar:false,
+        width: 1200,
+        height: height, // Initial height set to viewport height
+        min_height: height,
+        autoresize_min_height: height,
+        plugins: 'table link lists autoresize link autolink',
+        placeholder: 'Enter your text here...', // Set the placeholder text
+        toolbar: 'File  bold underline italic strikethrough| penButton |  subscript superscript  | fontfamily fontsize blocks | alignleft aligncentre alignright alignjustify | numlist bullist outdent indent | table link',
+        init_instance_callback: function (editor) {
+            editor.on('click', function (e) {  
+                // Call enterCanvasMode function
+                enterCanvasMode();
+            
+            });
+        },
+        setup: function(editor) {
+            editor.on('init', function (e) {
+                editor.setContent(text);
+            });
+            editor.shortcuts.add('Ctrl+S', 'Save', function() {
+                    // Call your saveState() function here
+                    saveState();
+                });
+
+                editor.shortcuts.add('Ctrl+O', 'Open', function() {
+                    // Call your openNote() function here
+                    openNote();
+                });
+editor.on('change input', function () {
+    adjustTinyMCEHeight();
+    if(opened == true) {
+                      document.title = fileNotePathDn + "* - DoNotes Lite";
+                        markFileAsUnsaved()
+                    }
+});
+let toggleState = false;
+            // Add a custom button with a specific icon and action
+            editor.ui.registry.addMenuButton('File', {
+  text: 'File',
+  fetch: (callback) => {
+    const items = [
+      {
+        type: 'menuitem',
+        text: 'New',
+        onAction: () => window.location.href = "index.html"
+      },
+      {
+        type: 'menuitem',
+        text: 'Open',
+        onAction: () => openNote()
+      },
+      {
+        type: 'menuitem',
+        text: 'Save',
+        onAction: () => saveState()
+      },
+      {
+        type: 'menuitem',
+        text: 'Save as',
+        onAction: () => saveNewState()
+      }
+    ];
+    callback(items);
+  }
+});
+                 editor.ui.registry.addToggleButton('penButton', {
+                  icon: 'edit-block', // Font Awesome pen icon
+                  tooltip: 'Toggle Pen', // Hover title
+                  onAction: function() {
+                    togglePen(editor);
+                    
+                  }
+                });
+              }
+    
+           }); 
+       </script>
+        <style>
+::-webkit-scrollbar-track {
+    transition:     0.1s linear background-color;
+}
+
+
+            .light::-webkit-scrollbar {
+    width: 1vw;
+} 
+.light::-webkit-scrollbar-corner { background-color: #fff; }
+.light::-webkit-scrollbar-track {
+    background-color: #fff;
+}
+
+.light::-webkit-scrollbar-thumb {
+    background-color: #d6dee1;
+    border-radius: 20px;
+    border: 6px solid transparent;
+    background-clip: content-box;
+}
+
+.light::-webkit-scrollbar-thumb:hover {
+    background-color: #a8bbbf;
+}
+      .dark::-webkit-scrollbar {
+    width: 1vw;
+} 
+
+.dark::-webkit-scrollbar-track {
+    background-color: #333;
+}
+.dark::-webkit-scrollbar-corner { background-color:#333; }
+.dark::-webkit-scrollbar-thumb {
+    background-color: #666;
+    border-radius: 20px;
+    border: 6px solid transparent;
+    background-clip: content-box;
+}
+
+.dark::-webkit-scrollbar-thumb:hover {
+    background-color: #888;
+}
+            :root {
+  color-scheme: dark;
+}
+            .switch {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 34px;
+}
+
+.switch input { 
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 26px;
+  width: 26px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+input:checked + .slider {
+  background-color: #2196F3;
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px #2196F3;
+}
+
+input:checked + .slider:before {
+  -webkit-transform: translateX(26px);
+  -ms-transform: translateX(26px);
+  transform: translateX(26px);
+}
+
+/* Rounded sliders */
+.slider.round {
+  border-radius: 34px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
+       body {
+        transition: 0.1s linear background-color;
+    margin:  0;
+    padding:  0;
+    font-family: Karla, Calibri, sans-serif;
+    text-align: center;
+    background-color: whitesmoke;
+}
+button, .btn {
+    padding:  6px 8px;
+    border:  none;
+    border-radius:  3px;
+    cursor: pointer;
+    background-color:  whitesmoke;
+    font-family: Karla, Calibri, sans-serif;
+    font-size:  16px;
+    transition: background-color 0.1s linear;
+}
+button:hover , .btn:hover {
+    background-color: #ddd;
+}
+input[type=text], input[type=password], input[type=email] {
+  width: 100%;
+  padding: 12px 20px;
+  margin: 8px 0;
+  box-sizing: border-box;
+  border: 3px solid #ccc;
+  -webkit-transition: 0.5s;
+  transition: 0.5s;
+  outline: none;
+}
+input[type=text]:focus, input[type=password]:focus {
+  border: 3px solid #555;
+}
+       .canvas-container {
+
+            position: static !important;
+            top: 30px;
+            z-index:  5;
+        }
+
+.back, .back canvas {
+    pointer-events: none;
+}
+#container {
+            width: 1200px;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .tox-toolbar {
+            z-index: 99 !important;
+        }
+        #modal-container {
+            width: 100%;
+            height: 100%;
+            position: fixed;
+            top:0;
+            left:0;
+            z-index: 110;
+            background: #0005;
+            display: none;
+        }
+        #modal {
+            width: 35%;
+            display: none;
+            min-width: 350px;
+            height: 65%;
+            overflow: auto;
+            background: white;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%,-50%);
+            z-index: 101;
+            border-radius: 5px;
+            padding: 50px;
+            font-family: Karla, Calibri, sans-serif;
+        }.danger {
+  padding: 5px;
+  font-family: Raleway, sans-serif;
+  margin:  5px;
+  cursor:  pointer;
+  border:  none;
+  font-size:  16px;
+  background-color: #dd2222;
+  color:  white;
+  transition: 0.1s ease background-color;
+  text-decoration:  none;
+  border-radius:  5px;
+
+}
+.danger:hover {
+  background-color: #ff4444;
+  color:  white;
+}
+
+
+.main-container {
+    display: inline-block;
+    padding-top: 45px;
+    width: 100vw;
+    max-width: 100vw;
+    height: 100%;
+    overflow-x: auto;
+}
+#modal-text {
+    font-size: 36px;
+    font-weight: 400;
+}
+.nav {
+    z-index: 102;
+}
+.tox-editor-header {
+    top: 0px !important;
+    position: fixed !important;
+    z-index: 101 !important;
+    left: 50.22% !important;
+    transform: translateX(-50%);
+    width: 100vw !important;
+    max-width: 1200px !important;
+    overflow-x: auto !important;
+}
+.tiny-container {
+    display: inline-block;
+    width: 100vw;
+    height: 100%;
+    overflow-x: auto;
+    max-width: 1200px;
+}
+.zoomcont {
+    display: inline-flex;
+    gap: 0.1vw;
+}
+.zoombox {
+    font-size: 1vw;
+    transition: 0.1s linear background;
+    color: white;
+    padding: 0.5vw;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-right: 0.2vw;
+}
+.zoombox:hover {
+    background: #333;
+}
+#pp {
+    
+            left: 50%;
+            transform: translateX(-49.5%);
+}
+#darkmode:checked + body {
+    background-color: #333;
+    color: #fff;
+}
+#darkmode:checked + #tinymce-editor {
+    background-color: #000;
+    color: #fff;
+}
+
+#darkmode:checked + #fabric-canvas {
+    background-color: #fff;
+}
+.nav {
+        background: white;
+        }
+        #darkOverlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      transition:   0.2s ease opacity;
+      opacity: 1;
+      background-color: #222; /* Adjust the alpha (last) value for transparency */
+      z-index: 1550;
+    }
+       </style>
+       <script>
+       var modalStatus = false;
+           function closeModal() {
+               if(lockModal == false ) {
+               $('#modal-container').hide();
+               $('#modal').hide();
+                modalStatus = false;
+               }
+           }
+           function openModal (x) {
+                modalStatus = true;
+               $('#modal-container').show();
+               $('#modal').show();
+               $('#modal-text').html(x);
+           }
+           $('#closeModal').click(function() {
+               closeModal();
+           });
+           $('#modal-container').click(function() {
+               if (!$(event.target).is('#modal *')) {
+                    closeModal();
+                }
+           });
+       </script>
+
+  <link rel="icon" type="image/x-icon" href="/dn-lte-ico.ico">
+  <link href="./fa/css/fontawesome.css" rel="stylesheet">
+  <link href="./fa/css/brands.css" rel="stylesheet">
+  <link href="./fa/css/solid.css" rel="stylesheet">
+</head>
+<body class="light">
+    <div style="position: fixed; z-index: 2; left: 5px; bottom: 5px; background: #000d; padding: 5px 50px; border-radius: 22px;  display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 5px 15px #0004; font-size: 1vw;">
+        Dark mode
+    <label class="switch" style="margin-left: 20px">
+  <input type="checkbox" id="darkmode">
+  <span class="slider round"></span>
+</label>
+</div>
+<div style="position: fixed; z-index: 2; right: 5px; bottom: 5px; background: #000d; padding: 0.01vw 0.01vw; border-radius: 22px;  display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 5px 15px #0004; ">
+        
+    
+    <div class="zoombox" id="zoomInButton" style="margin-left: 0.5vw;"><i class="fa fa-magnifying-glass-plus"></i></div>
+    <div class="zoombox" id="zoomOutButton"><i class=" fa fa-magnifying-glass-minus"></i></div>
+</div>
+
+    <div id="modal-container">
+            <div id="modal">
+                <button id="closeModal" onclick="closeModal()">X</button>
+                <div id="modal-text">
+                    
+            </div>
+        </div>
+    </div>
+    <div class="main-container" id="main-container">
+        <div class="tiny-container">
+            <textarea id="nexustext">
+            </textarea>
+        </div>
+        <div id="pp" style="position: absolute; !important; top: 50px; ">
+            <div id="container">
+                <canvas id="canvas"></canvas>
+            </div>
+        </div>
+    </div>
+    <script>
+      const { webFrame } = require("electron");
+
+      document.getElementById("zoomInButton").addEventListener("click", () => {
+        webFrame.setZoomFactor(webFrame.getZoomFactor() + 0.1);
+      });
+
+      document.getElementById("zoomOutButton").addEventListener("click", () => {
+        webFrame.setZoomFactor(webFrame.getZoomFactor() - 0.1);
+      });
+                var scrollingDiv = document.getElementById('pp');
+        var editor = tinymce.get('nexustext');
+        function enterTextMode() {
+            canvas.selection = false;
+            $('#pp').addClass('back');
+            canvas.discardActiveObject();
+            canvas.renderAll(); // Re-render the canvas
+        }
+        function enterCanvasMode() {
+            canvas.selection = false;
+            canvas.discardActiveObject();
+            canvas.renderAll(); // Re-render the canvas
+            $('#pp').removeClass('back');
+        }
+        function trimStates() {
+          if (currentStateIndex < 0) {
+            currentStateIndex = 0;
+          } else if (currentStateIndex < fabricStates.length - 1) {
+            fabricStates.splice(currentStateIndex + 1, fabricStates.length - currentStateIndex - 1);
+            tinymceStates.splice(currentStateIndex + 1, tinymceStates.length - currentStateIndex - 1);
+          }
+        }
+        $(document).on('keydown', function(event) {
+                // Check if the user presses Ctrl+S (or Command+S on macOS)
+                if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+                    event.preventDefault(); // Prevent the default browser save action
+                    saveState(); // Call your custom save function
+                }
+                if ((event.ctrlKey || event.metaKey) && event.key === 'o') {
+                    event.preventDefault(); // Prevent the default browser save action
+                    openNote(); // Call your custom save function
+                }
+            });
+        var penMode = false;
+         function togglePen() {
+            var elementWithTitle = $('[title="Toggle Pen"]');
+
+            // Add a class to the element
+            elementWithTitle.toggleClass('tox-tbtn--enabled');
+            isDrawingMode = !isDrawingMode;
+            penMode = !penMode;
+            if (isDrawingMode) {
+                canvas.isDrawingMode = true;
+                canvas.freeDrawingBrush.color = 'black'; // Set the brush color
+                canvas.freeDrawingBrush.width = 2; // Set the brush width
+            } else {
+                canvas.isDrawingMode = false;
+            }
+        }
+        function reinitializeTinyMCE(editorId, isDarkMode) {
+
+            var text = tinymce.activeEditor.getContent();
+  // Step 1: Save current content
+  const editor = tinymce.get(editorId);
+  const currentContent = editor.getContent();
+
+  // Step 2: Destroy the TinyMCE instance
+  editor.destroy();
+
+  // Step 3: Reinitialize with configuration
+  const height = window.innerHeight; // Set your height value
+  const tinymceConfig = {
+    selector: `#${editorId}`,
+    promotion: false,
+    menubar: false,
+    width: 1200,
+    height: height,
+    min_height: height,
+    autoresize_min_height: height,
+    plugins: 'table link lists autoresize link autolink',
+    placeholder: 'Enter your text here...',
+    toolbar: 'File  bold underline italic strikethrough| penButton |  subscript superscript  | fontfamily fontsize blocks | alignleft aligncentre alignright alignjustify | numlist bullist outdent indent | table link',
+    init_instance_callback: function (editor) {
+      editor.on('click', function (e) {
+        enterCanvasMode();
+      });
+    },
+    setup: function (editor) {
+      editor.on('init', function (e) {
+        editor.setContent(text);
+      });
+      editor.shortcuts.add('Ctrl+S', 'Save', function() {
+                    // Call your saveState() function here
+                    saveState();
+                });
+
+                editor.shortcuts.add('Ctrl+O', 'Open', function() {
+                    // Call your openNote() function here
+                    openNote();
+                });
+      editor.on('change input', function () {
+        adjustTinyMCEHeight();
+        if (opened) {
+          document.title = fileNotePathDn + '* - DoNotes';
+          markFileAsUnsaved()
+        }
+      });
+
+      // Add the custom 'File' button
+      editor.ui.registry.addMenuButton('File', {
+        text: 'File',
+        fetch: (callback) => {
+          const items = [
+            {
+              type: 'menuitem',
+              text: 'New',
+              onAction: () => window.location.href = 'index.html',
+            },
+            {
+              type: 'menuitem',
+              text: 'Open',
+              onAction: () => openNote(),
+            },
+            {
+              type: 'menuitem',
+              text: 'Save',
+              onAction: () => saveState(),
+            },
+          ];
+          callback(items);
+        },
+      });
+
+      // Add the custom 'penButton' toggle button
+      editor.ui.registry.addToggleButton('penButton', {
+        icon: 'edit-block',
+        tooltip: 'Toggle Pen',
+        onAction: function () {
+          togglePen(editor);
+        },
+      });
+    },
+  };
+
+  if (isDarkMode) {
+    tinymceConfig.skin = 'oxide-dark';
+    tinymceConfig.content_css = 'dark';
+  }
+
+  tinymce.init(tinymceConfig);
+
+  // Step 4: Set the saved content back
+  const newEditor = tinymce.get(editorId);
+}
+
+        var container = document.getElementById("container");
+
+        // Create a Fabric.js canvas instance
+        var canvas = new fabric.Canvas("canvas");
+        var isDrawingMode = false;
+       $(document).ready(function() {
+    var darkMode = false;
+
+    // Initialize your Fabric.js canvas
+    var canvas = new fabric.Canvas('fabric-canvas');
+        function toggleDarkModeScrollBar() {
+
+   $(".light,.dark").toggleClass("light").toggleClass("dark");
+            
+        }
+ toggleDarkModeScrollBar();
+        let isDarkMode = false;
+
+        // Apply the default light mode styles initially
+        toggleDarkModeScrollBar();
+      
+    $('#darkmode').on('change', function() {
+        darkMode = $(this).prop('checked');
+        updateStyles();
+        isDarkMode = !isDarkMode;
+            toggleDarkModeScrollBar();
+            if(penMode == true) {
+                togglePen();
+            }
+            reinitializeTinyMCE('nexustext', isDarkMode);
+
+    });
+    // Function to apply light mode styles to the scroll bar
+        
+    function updateStyles() {
+        if (darkMode) {
+            // Dark mode
+            $('body').css('background-color', '#1a2330');
+            $('body').css('color', '#fff');
+            $('#tinymce-editor').css('background-color', '#000');
+            canvas.forEachObject(function(obj) {
+                if (obj.fill === '#000') {
+                    obj.set({ fill: '#fff' });
+                } else if (obj.fill === '#fff') {
+                    obj.set({ fill: '#000' });
+                }
+            });
+            canvas.renderAll();
+        } else {
+            // Light mode (reset to default)
+            $('body').css('background-color', '#fff');
+            $('body').css('color', '#000');
+            $('#tinymce-editor').css('background-color', '#fff');
+            canvas.forEachObject(function(obj) {
+                if (obj.fill === '#fff') {
+                    obj.set({ fill: '#000' });
+                } else if (obj.fill === '#000') {
+                    obj.set({ fill: '#fff' });
+                }
+            });
+            canvas.renderAll();
+        }
+    }
+
+    // Initial styles
+    updateStyles();
+});
+
+        var data = img;
+        canvas.loadFromJSON(data);
+        // Set the canvas dimensions to match the container dimensions
+        canvas.setWidth(container.offsetWidth);
+        canvas.setHeight(container.offsetHeight);
+
+        canvas.on('object:added', unSaveFile());
+        canvas.on('object:removed', unSaveFile());
+        canvas.on('object:modified', unSaveFile());
+        canvas.on('mouse:down', function(event) {
+        var target = event.target;
+            if (!target) {
+                if (!isDrawingMode) {
+                    // No object clicked
+                    enterTextMode();
+                }
+            }
+        });
+        function unSaveFile() {
+            markFileAsUnsaved()
+                if(opened == true) {
+                      document.title = fileNotePathDn + "* - DoNotes Lite";}
+        }
+        
+           const nativeTheme = electron.remote.nativeTheme
+
+if (nativeTheme.shouldUseDarkColors) {
+    $(document).ready(function() {
+        var darkOverlay = $('<div id="darkOverlay"></div>');
+
+      // Append it to the body
+      $('body').append(darkOverlay);
+    // Code here
+     setTimeout(function() {
+    $('#darkmode').click();
+    setTimeout(function() {
+
+    $('#darkOverlay').css('opacity', '0');
+    setTimeout(function() {
+   $('#darkOverlay').hide();
+        }, 100);
+        }, 100);
+}, 500);
+});
+}
+function deleteSelectedObjects() {
+    var activeObject = canvas.getActiveObject();
+    if (!activeObject.isEditing) {
+        if (activeObject) {
+            if (activeObject.type === 'activeSelection') {
+                // Delete all objects in the active selection
+                activeObject.getObjects().forEach(function(object) {
+                    canvas.remove(object);
+                });
+            } else {
+                // Delete the single selected object
+                canvas.remove(activeObject);
+            }
+            canvas.discardActiveObject();
+            canvas.requestRenderAll();
+        }
+    }
+}
+const mainCont = document.getElementById('main-container');
+function adjustTinyMCEHeight() {
+  // Get the height of the entire page
+  var textHeight = $('#main-container').height();
+  var canvasHeight  = canvas.getHeight();
+  if(textHeight > canvasHeight ) {
+
+        canvas.setHeight(textHeight );
+  }
+}
+function expandCanvas(object) {
+    var canvasWidth = canvas.getWidth();
+    var canvasHeight = canvas.getHeight();
+    var objectWidth = object.width * object.scaleX;
+    var objectHeight = object.height * object.scaleY;
+    var rightEdge = object.left + objectWidth;
+    var bottomEdge = object.top + objectHeight;
+
+    //console.log('Width:' + canvasWidth);
+    //console.log('ObjPos:' + rightEdge);
+    if (bottomEdge > canvasHeight - 50) {
+        canvas.setHeight(bottomEdge + 50);
+    }
+    var editor = tinymce.get('nexustext');
+    tinymce.activeEditor.editorContainer.style.minHeight = canvas.getHeight();
+    var origHeight = $('#main-container').height();
+    if(origHeight < canvas.getHeight()) {
+    $('#main-container').height(canvas.getHeight() + 'px');
+    $('#nexustext_ifr').height(canvas.getHeight() + 'px');
+    $('div[role="application"]').height(canvas.getHeight() -20 + 'px');
+}
+// Get the iframe element containing the editor contents
+var iframe = editor.iframeElement;
+
+// Set the new height
+var newHeight = canvas.getHeight(); // New height in pixels
+document.getElementById('nexustext_ifr').style.minHeight = newHeight + 'px';
+$('#main-container').height = newHeight;
+$('.tiny-container').height = newHeight;
+
+}
+// Event listener for object modified
+canvas.on('object:modified', function(event) {
+    var object = event.target;
+    expandCanvas(object);
+});
+canvas.on('object:added', function(event) {
+    var object = event.target;
+    expandCanvas(object);
+});
+       
+    </script>
+    <script>
+        //Open and close
+        const { dialog } = remote;
+ function openNote() {
+            remote.dialog.showOpenDialog({
+    filters: [
+      { name: 'DoNotes note', extensions: ['dn'] }
+    ],
+    properties: ['openFile']
+  }).then(result => {
+    const filePaths = result.filePaths;
+    if (filePaths && filePaths.length > 0) {
+      const selectedFilePath = filePaths[0];
+      console.log(selectedFilePath);
+      if (selectedFilePath.endsWith('.dn')) {
+        // Valid .dn file selected
+
+
+
+    saveFileQuietly(selectedFilePath, 'opened.txt');
+
+window.location.href = "index.html";
+
+      } else {
+        // Invalid file extension
+        alert( 'Please select a file with a .dn extension.');
+      }
+    } else {
+      // No file selected
+      alert(filePathParagraph.textContent = 'No file selected.');
+    }
+  }).catch(err => {
+    console.error(err);
+  });
+        }
+        function saveNewState() {
+            dialog.showSaveDialog(options).then(result => {
+                    if (!result.canceled) {
+                      let filePath = result.filePath;
+
+                      // Ensure the file has the ".dn" extension.
+                      if (!filePath.endsWith('.dn')) {
+                        filePath += '.dn';
+                      }
+                      console.log(filePath);
+                      fileNotePathDn = filePath;
+                      opened = true;
+                      saveState();
+                    }
+                });
+        }
+        function saveState() {
+            if(fileNotePathDn != 'undefined') {
+            if(opened == false) {
+                const options = {
+                    title: 'Save DoNotes File',
+                    filters: [{ name: 'DoNotes Files', extensions: ['dn'] }]
+                    };
+
+                    dialog.showSaveDialog(options).then(result => {
+                    if (!result.canceled) {
+                      let filePath = result.filePath;
+
+                      // Ensure the file has the ".dn" extension.
+                      if (!filePath.endsWith('.dn')) {
+                        filePath += '.dn';
+                      }
+                      console.log(filePath);
+                      fileNotePathDn = filePath;
+                      opened = true;
+                      saveState();
+                    }
+                });
+            }
+            var text = tinymce.activeEditor.getContent();
+            console.log('Save request started');
+            var content = JSON.stringify(canvas.toJSON());
+            var blogDownload = '<donotes-version>3.2</donotes-version><donotes-text>' + text + '</donotes-text><donotes-img>' + content + '</donotes-img>';
+
+            text = btoa(unescape(encodeURIComponent(text)));
+            fs.writeFile(fileNotePathDn, blogDownload, function (err) {
+            if (err) {
+                openModal(err);
+            } else {
+
+                      document.title = fileNotePathDn + " - DoNotes Lite";
+                function getCurrentTime() {
+
+            }
+            }
+            });
+
+
+            content = btoa(content);
+            dnsvg = canvas.toSVG();
+            var myContent = tinymce.activeEditor.getContent();
+markFileAsSaved()
+
+        }else {
+            
+        }}
+
+</script>
+</body>
+</html>
